@@ -183,4 +183,18 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
     axis.title.y = element_text(color = "orange4", size = 12, hjust = 0.5, face = "bold")
   )
 
+ggplot(shipping_data, aes(x = factor(Customer_rating), fill = factor(Reached.on.Time_Y.N))) +
+  geom_bar(position = "dodge", stat = "count") +
+  labs(
+    title = "Customer Ratings by On-Time Delivery",
+    x = "Customer Rating",
+    y = "Count",
+    fill = "Reached on Time"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
+  )
 
