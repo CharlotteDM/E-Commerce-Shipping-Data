@@ -7,6 +7,8 @@ library(randomForest)
 library(rpart)
 library(rpart.plot)
 library(xgboost)
+library(coefplot)
+library(pROC)
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -249,8 +251,25 @@ predicted_classes <- factor(predicted_classes, levels = c("Not On Time", "On Tim
 #accuracy
 confusion_matrix <- confusionMatrix(predicted_classes, testData$Reached.on.Time_Y.N)
 accuracy <- confusion_matrix$overall['Accuracy']
+sensitivity <- confusion_matrix$byClass['Sensitivity']
+specificity <- confusion_matrix$byClass['Specificity']
 print(paste("Accuracy:", round(accuracy, 2)))
+print(paste("Sensitivity:", round(sensitivity, 2)))
+print(paste("Specificity:", round(specificity, 2)))
 
+coefplot(model_delivery)
+
+#ROC Curve
+roc_curve <- roc(testData$Reached.on.Time_Y.N, predictions)
+plot(roc_curve, main = "ROC Curve", col = "blue")
+auc(roc_curve) #area under the curve (the probability that the model will assign a higher probability of a positive class to a positive case than to a negative case): 0.7158
+
+#histogram for predicted probabilities
+predicted_df <- data.frame(TrueLabel = testData$Reached.on.Time_Y.N, PredictedProbability = predictions)
+ggplot(predicted_df, aes(x = PredictedProbability, fill = TrueLabel)) +
+  geom_histogram(binwidth = 0.1, position = "dodge", alpha = 0.7) +
+  labs(title = "Histogram of Predicted Probabilities", x = "Predicted Probability", y = "Frequency") +
+  scale_fill_manual(values = c("Not On Time" = "coral1", "On Time" = "aquamarine1"))
 
 #####-------random forest--------######
 model_rf <- randomForest(Reached.on.Time_Y.N ~ ., data = trainData, ntree = 100, mtry = 3, importance = TRUE)
@@ -261,11 +280,28 @@ predictions_rf <- predict(model_rf, testData)
 # accuracy
 confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
-print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.65
+sensitivity <- confusion_matrix_rf$byClass['Sensitivity']
+specificity <- confusion_matrix_rf$byClass['Specificity']
+print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.66
+print(paste("Sensitivity:", round(sensitivity, 2)))
+print(paste("Specificity:", round(specificity, 2)))
 
 importance(model_rf) #the most important: weight, discount, cost, prior purchases
 varImpPlot(model_rf)
 
+
+#ROC curve
+predictions_prob <- predict(model_rf, testData, type = "prob")[,2]
+roc_curve <- roc(testData$Reached.on.Time_Y.N, predictions_prob)
+plot(roc_curve, main = "ROC Curve", col = "blue")
+auc(roc_curve) #Area under the curve: 0.7337
+
+#visualization of prediction
+predicted_df <- data.frame(TrueLabel = testData$Reached.on.Time_Y.N, PredictedProbability = predictions_prob)
+ggplot(predicted_df, aes(x = PredictedProbability, fill = TrueLabel)) +
+  geom_histogram(binwidth = 0.1, position = "dodge", alpha = 0.7) +
+  labs(title = "Histogram of Predicted Probabilities", x = "Predicted Probability", y = "Frequency") +
+  scale_fill_manual(values = c("Not On Time" = "coral1", "On Time" = "aquamarine1"))
 
 #####-------random forest with hypermetric optimization--------######
 #setting the grid of params to search
@@ -288,7 +324,24 @@ predictions_rf <- predict(rf_model, testData)
 #accuracy
 confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
-print(paste("Accuracy:", round(accuracy_rf, 2)))
+sensitivity <- confusion_matrix_rf$byClass['Sensitivity']
+specificity <- confusion_matrix_rf$byClass['Specificity']
+print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.66
+print(paste("Sensitivity:", round(sensitivity, 2)))
+print(paste("Specificity:", round(specificity, 2)))
+
+#ROC curve
+predictions_prob <- predict(rf_model, testData, type = "prob")[,2]
+roc_curve <- roc(testData$Reached.on.Time_Y.N, predictions_prob)
+plot(roc_curve, main = "ROC Curve", col = "blue")
+auc(roc_curve) #Area under the curve: 0.7357
+
+#visualization of prediction
+predicted_df <- data.frame(TrueLabel = testData$Reached.on.Time_Y.N, PredictedProbability = predictions_prob)
+ggplot(predicted_df, aes(x = PredictedProbability, fill = TrueLabel)) +
+  geom_histogram(binwidth = 0.1, position = "dodge", alpha = 0.7) +
+  labs(title = "Histogram of Predicted Probabilities", x = "Predicted Probability", y = "Frequency") +
+  scale_fill_manual(values = c("Not On Time" = "coral1", "On Time" = "aquamarine1"))
 
 #####-------decision tree--------######
 tree_model <- rpart(Reached.on.Time_Y.N ~ ., data = trainData, method = "class")
@@ -305,6 +358,16 @@ print(paste("Accuracy:", round(accuracy_tree, 2))) #better: 0.68
 rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE, 
            box.palette = "RdYlGn", shadow.col = "gray", nn = TRUE)
 
+
+
+
+
+
+
+
+
+
+
 ###############################
 #------predictions models - clients rating-----#
 ###############################
@@ -315,7 +378,7 @@ rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE,
 model_customer <- lm(Customer_rating ~ ., data = trainData)
 predictions_customer <- predict(model_customer, testData)
 rmse_lm <- sqrt(mean((predictions_customer- testData$Customer_rating)^2))
-print(paste("RMSE:", round(rmse_lm, 2)))
+print(paste("RMSE:", round(rmse_lm, 2))) #RMSE = 1.41
 
 
 
@@ -326,7 +389,7 @@ model_rf_customer <- randomForest(Customer_rating ~ ., data = trainData, ntree =
 predictions_rf_customer <- predict(model_rf_customer, testData)
 
 rmse_rf <- sqrt(mean((predictions_rf_customer - testData$Customer_rating)^2))
-print(paste("RMSE:", round(rmse_rf, 2)))
+print(paste("RMSE:", round(rmse_rf, 2))) #RMSE = 1.44
 
 importance(model_rf_customer) #the most important: customer care calls, weight in gms, cost of the product
 varImpPlot(model_rf_customer)
@@ -340,7 +403,7 @@ predictions_tree_customer <- predict(model_tree_customer, testData)
 
 rmse_tree_customer <- sqrt(mean((predictions_tree_customer - testData$Customer_rating)^2))
 
-print(paste("RMSE:", round(rmse_tree_customer, 2)))
+print(paste("RMSE:", round(rmse_tree_customer, 2))) #RMSE = 1.41
 
 
 
