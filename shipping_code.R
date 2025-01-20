@@ -4,6 +4,8 @@ library(ggplot2)
 library (reshape2)
 library(caret)
 library(randomForest)
+library(rpart)
+library(rpart.plot)
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -286,5 +288,20 @@ predictions_rf <- predict(rf_model, testData)
 confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
 print(paste("Accuracy:", round(accuracy_rf, 2)))
+
+#####-------decision tree--------######
+tree_model <- rpart(Reached.on.Time_Y.N ~ ., data = trainData, method = "class")
+
+#prediction
+predictions_tree <- predict(tree_model, testData, type = "class")
+
+#accuracy
+confusion_matrix_tree <- confusionMatrix(predictions_tree, testData$Reached.on.Time_Y.N)
+accuracy_tree <- confusion_matrix_tree$overall['Accuracy']
+print(paste("Accuracy:", round(accuracy_tree, 2))) #better: 0.68
+
+#viisualization
+rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE, 
+           box.palette = "RdYlGn", shadow.col = "gray", nn = TRUE)
 
 
