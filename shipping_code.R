@@ -1,6 +1,9 @@
+library(dplyr)
+library(tidyverse)
 library(ggplot2)
 library (reshape2)
 library(caret)
+library(randomForest)
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -213,9 +216,9 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.
     axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
   )
 
-#####
-#------logistic regression for delivery time-----#
-#####
+###############################
+#------predictions models-----#
+###############################
 
 
 # Converting column: Reached.on.Time_Y.N on factor
@@ -231,7 +234,8 @@ testData <- shipping_data[-trainIndex, ]
 
 table(testData$Reached.on.Time_Y.N)
 
-#logistic regression model
+#####-------logistic regression model--------######
+
 model_delivery <- glm(Reached.on.Time_Y.N ~ ., data = trainData, family = binomial)
 
 #predictions
@@ -239,11 +243,25 @@ predictions <- predict(model_delivery, testData, type = "response")
 predicted_classes <- ifelse(predictions > 0.5, "On Time", "Not On Time")
 predicted_classes <- factor(predicted_classes, levels = c("Not On Time", "On Time"))
 
-#Accuracy
+#accuracy
 confusion_matrix <- confusionMatrix(predicted_classes, testData$Reached.on.Time_Y.N)
 accuracy <- confusion_matrix$overall['Accuracy']
 print(paste("Accuracy:", round(accuracy, 2)))
 
+
+#####-------random forest--------######
+model_rf <- randomForest(Reached.on.Time_Y.N ~ ., data = trainData, ntree = 100, mtry = 3, importance = TRUE)
+
+# prediction
+predictions_rf <- predict(model_rf, testData)
+
+# accuracy
+confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
+accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
+print(paste("Accuracy:", round(accuracy_rf, 2)))
+
+importance(model_rf) #the most important: weight, discount, cost, prior purchases
+varImpPlot(model_rf)
 
 
 
