@@ -6,6 +6,7 @@ library(caret)
 library(randomForest)
 library(rpart)
 library(rpart.plot)
+library(xgboost)
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -219,7 +220,7 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.
   )
 
 ###############################
-#------predictions models-----#
+#------predictions models - delivery time-----#
 ###############################
 
 
@@ -303,5 +304,44 @@ print(paste("Accuracy:", round(accuracy_tree, 2))) #better: 0.68
 #viisualization
 rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE, 
            box.palette = "RdYlGn", shadow.col = "gray", nn = TRUE)
+
+###############################
+#------predictions models - clients rating-----#
+###############################
+
+#####-------regression model--------######
+
+
+model_customer <- lm(Customer_rating ~ ., data = trainData)
+predictions_customer <- predict(model_customer, testData)
+rmse_lm <- sqrt(mean((predictions_customer- testData$Customer_rating)^2))
+print(paste("RMSE:", round(rmse_lm, 2)))
+
+
+
+#####-------random forest--------######
+
+model_rf_customer <- randomForest(Customer_rating ~ ., data = trainData, ntree = 100, mtry = 3, importance = TRUE)
+
+predictions_rf_customer <- predict(model_rf_customer, testData)
+
+rmse_rf <- sqrt(mean((predictions_rf_customer - testData$Customer_rating)^2))
+print(paste("RMSE:", round(rmse_rf, 2)))
+
+importance(model_rf_customer) #the most important: customer care calls, weight in gms, cost of the product
+varImpPlot(model_rf_customer)
+
+
+
+#####-------decision tree--------######
+model_tree_customer <- rpart(Customer_rating ~ ., data = trainData, method = "anova")
+
+predictions_tree_customer <- predict(model_tree_customer, testData)
+
+rmse_tree_customer <- sqrt(mean((predictions_tree_customer - testData$Customer_rating)^2))
+
+print(paste("RMSE:", round(rmse_tree_customer, 2)))
+
+
 
 
