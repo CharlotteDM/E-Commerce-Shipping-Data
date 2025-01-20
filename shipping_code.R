@@ -18,6 +18,9 @@ dim(shipping_data)
 
 sum(is.na(shipping_data)) 
 
+#removing ID column
+shipping_data$ID <- NULL
+
 #changing categories of data
 shipping_data$Warehouse_block <- as.factor(shipping_data$Warehouse_block)
 shipping_data$Mode_of_Shipment <- as.factor(shipping_data$Mode_of_Shipment)
@@ -30,8 +33,10 @@ shipping_data$Gender <- as.factor(shipping_data$Gender)
 shipping_data_summary <- shipping_data %>%
   group_by(Warehouse_block) %>%
   summarise(count = n())
+
 ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
   geom_bar(stat = "identity", fill = "lightgreen") +
+  geom_text(aes(label = count), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Warehouse Block") +
   theme_minimal() +
   theme( 
@@ -42,6 +47,7 @@ ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
 
 ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
   geom_bar(fill = "skyblue") +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Using different shipping methods") +
   theme_minimal() +
   theme( 
@@ -52,6 +58,7 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
 
 ggplot(shipping_data, aes(x = Product_importance, fill = Product_importance)) +
   geom_bar() +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust =1.5, color = "black", size = 3.5) +
   labs(title = "Product Importance") +
   theme_minimal() +
 theme( 
@@ -63,7 +70,8 @@ theme(
 
 
 ggplot(shipping_data, aes(x = Customer_rating)) +
-  geom_histogram(binwidth = 1, fill = "pink", color = "black") +
+  geom_bar(fill = "pink", color = "black") +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Customer Rating") +
   theme_minimal() +
   theme( 
@@ -74,7 +82,8 @@ ggplot(shipping_data, aes(x = Customer_rating)) +
 
 
 ggplot(shipping_data, aes(x = factor(Customer_care_calls))) +
-  geom_bar(fill = "blue", color = "black") +
+  geom_bar(fill = "dodgerblue", color = "black") +
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(
     title = "Number of Customer Care Calls",
     x = "Number of Customer Care Calls",
@@ -124,6 +133,7 @@ ggplot(cor_matrix_melted, aes(x = Var1, y = Var2, fill = value)) +
 #charts showing the relationships between variables
 ggplot(shipping_data, aes(x = Warehouse_block, y = Cost_of_the_Product)) +
   stat_summary(fun = mean, geom = "bar", fill = "skyblue", color = "black") +
+  stat_summary(fun = mean, geom = "text", aes(label = round(..y.., 2)), vjust = 1.5) +
   labs(
     title = "Average Product Cost by Warehouse Block",
     x = "Warehouse Block",
@@ -190,6 +200,10 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = factor(Reached.on.
     x = "Customer Rating",
     y = "Count",
     fill = "Reached on Time"
+  ) +
+  scale_fill_manual(
+    values = c("0" = "tomato2", "1" = "seagreen3"),
+    labels = c("0" = "no", "1" = "yes")
   ) +
   theme_minimal() +
   theme(
