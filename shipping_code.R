@@ -1,5 +1,6 @@
 library(ggplot2)
 library (reshape2)
+library(caret)
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -193,7 +194,7 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
     axis.title.y = element_text(color = "orange4", size = 12, hjust = 0.5, face = "bold")
   )
 
-ggplot(shipping_data, aes(x = factor(Customer_rating), fill = factor(Reached.on.Time_Y.N))) +
+ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N)) +
   geom_bar(position = "dodge", stat = "count") +
   labs(
     title = "Customer Ratings by On-Time Delivery",
@@ -202,8 +203,8 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = factor(Reached.on.
     fill = "Reached on Time"
   ) +
   scale_fill_manual(
-    values = c("0" = "tomato2", "1" = "seagreen3"),
-    labels = c("0" = "no", "1" = "yes")
+    values = c("Not On Time" = "tomato2", "On Time" = "seagreen3"),
+    labels = c("Not On Time" = "No", "On Time" = "Yes")
   ) +
   theme_minimal() +
   theme(
@@ -211,4 +212,40 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = factor(Reached.on.
     axis.title.x = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
     axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
   )
+
+#####
+#------logistic regression for delivery time-----#
+#####
+
+
+# Converting column: Reached.on.Time_Y.N on factor
+shipping_data$Reached.on.Time_Y.N <- factor(shipping_data$Reached.on.Time_Y.N, 
+                                            levels = c(0, 1), 
+                                            labels = c("Not On Time", "On Time"))
+
+#train and test data set
+set.seed(123)
+trainIndex <- createDataPartition(shipping_data$Reached.on.Time_Y.N, p = 0.8, list = FALSE)
+trainData <- shipping_data[trainIndex, ]
+testData <- shipping_data[-trainIndex, ]  
+
+table(testData$Reached.on.Time_Y.N)
+
+#logistic regression model
+model_delivery <- glm(Reached.on.Time_Y.N ~ ., data = trainData, family = binomial)
+
+#predictions
+predictions <- predict(model_delivery, testData, type = "response")
+predicted_classes <- ifelse(predictions > 0.5, "On Time", "Not On Time")
+predicted_classes <- factor(predicted_classes, levels = c("Not On Time", "On Time"))
+
+#Accuracy
+confusion_matrix <- confusionMatrix(predicted_classes, testData$Reached.on.Time_Y.N)
+accuracy <- confusion_matrix$overall['Accuracy']
+print(paste("Accuracy:", round(accuracy, 2)))
+
+
+
+
+
 
