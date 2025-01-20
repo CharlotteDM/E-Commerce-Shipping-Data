@@ -258,12 +258,33 @@ predictions_rf <- predict(model_rf, testData)
 # accuracy
 confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
-print(paste("Accuracy:", round(accuracy_rf, 2)))
+print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.65
 
 importance(model_rf) #the most important: weight, discount, cost, prior purchases
 varImpPlot(model_rf)
 
 
+#####-------random forest with hypermetric optimization--------######
+#setting the grid of params to search
+tuneGrid <- expand.grid(.mtry = c(2, 3, 4, 5))
 
+#control setting for model training
+control <- trainControl(method = "cv", number = 5)
+
+#Model training
+set.seed(123)
+rf_model <- train(Reached.on.Time_Y.N ~ ., data = trainData, method = "rf", 
+                  tuneGrid = tuneGrid, trControl = control)
+
+#best params
+print(rf_model$bestTune)
+
+#prediction
+predictions_rf <- predict(rf_model, testData)
+
+#accuracy
+confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
+accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
+print(paste("Accuracy:", round(accuracy_rf, 2)))
 
 
