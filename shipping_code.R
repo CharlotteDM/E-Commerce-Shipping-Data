@@ -9,6 +9,7 @@ library(rpart.plot)
 library(xgboost)
 library(coefplot)
 library(pROC)
+library(smotefamily)
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -253,9 +254,9 @@ confusion_matrix <- confusionMatrix(predicted_classes, testData$Reached.on.Time_
 accuracy <- confusion_matrix$overall['Accuracy']
 sensitivity <- confusion_matrix$byClass['Sensitivity']
 specificity <- confusion_matrix$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy, 2)))
-print(paste("Sensitivity:", round(sensitivity, 2)))
-print(paste("Specificity:", round(specificity, 2)))
+print(paste("Accuracy:", round(accuracy, 2))) #0.64
+print(paste("Sensitivity:", round(sensitivity, 2))) #0.58
+print(paste("Specificity:", round(specificity, 2)))  #0.68
 
 coefplot(model_delivery)
 
@@ -271,6 +272,32 @@ ggplot(predicted_df, aes(x = PredictedProbability, fill = TrueLabel)) +
   labs(title = "Histogram of Predicted Probabilities", x = "Predicted Probability", y = "Frequency") +
   scale_fill_manual(values = c("Not On Time" = "coral1", "On Time" = "aquamarine1"))
 
+#heatmap for predictive data
+confusion_matrix_data <- as.data.frame(confusion_matrix$table)
+confusion_matrix_data <- expand.grid(
+  Prediction = levels(testData$Reached.on.Time_Y.N),
+  Reference = levels(testData$Reached.on.Time_Y.N))
+confusion_matrix_data <- merge(
+  confusion_matrix_data, as.data.frame(confusion_matrix$table), 
+  by = c("Prediction", "Reference"), all.x = TRUE)
+confusion_matrix_data$Freq[is.na(confusion_matrix_data$Freq)] <- 0
+
+ggplot(confusion_matrix_data, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "gray80") +
+  geom_text(aes(label = Freq), color = "black", size = 4) +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Confusion Matrix Heatmap (Regression)", x = "Actual", y = "Predicted") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8)
+  )
+
+
+
 #####-------random forest--------######
 model_rf <- randomForest(Reached.on.Time_Y.N ~ ., data = trainData, ntree = 100, mtry = 3, importance = TRUE)
 
@@ -282,9 +309,9 @@ confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
 sensitivity <- confusion_matrix_rf$byClass['Sensitivity']
 specificity <- confusion_matrix_rf$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.66
-print(paste("Sensitivity:", round(sensitivity, 2)))
-print(paste("Specificity:", round(specificity, 2)))
+print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.65
+print(paste("Sensitivity:", round(sensitivity, 2))) #0.69
+print(paste("Specificity:", round(specificity, 2))) #0.62
 
 importance(model_rf) #the most important: weight, discount, cost, prior purchases
 varImpPlot(model_rf)
@@ -302,6 +329,30 @@ ggplot(predicted_df, aes(x = PredictedProbability, fill = TrueLabel)) +
   geom_histogram(binwidth = 0.1, position = "dodge", alpha = 0.7) +
   labs(title = "Histogram of Predicted Probabilities", x = "Predicted Probability", y = "Frequency") +
   scale_fill_manual(values = c("Not On Time" = "coral1", "On Time" = "aquamarine1"))
+
+#heatmap for predictive data
+confusion_matrix_data_rf <- as.data.frame(confusion_matrix_rf$table)
+confusion_matrix_data_rf <- expand.grid(
+  Prediction = levels(testData$Reached.on.Time_Y.N),
+  Reference = levels(testData$Reached.on.Time_Y.N))
+confusion_matrix_data_rf <- merge(
+  confusion_matrix_data_rf, as.data.frame(confusion_matrix_rf$table), 
+  by = c("Prediction", "Reference"), all.x = TRUE)
+confusion_matrix_data_rf$Freq[is.na(confusion_matrix_data_rf$Freq)] <- 0
+
+ggplot(confusion_matrix_data_rf, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "gray80") +
+  geom_text(aes(label = Freq), color = "black", size = 4) +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Confusion Matrix Heatmap", x = "Actual", y = "Predicted") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8)
+  )
 
 #####-------random forest with hypermetric optimization--------######
 #setting the grid of params to search
@@ -326,9 +377,9 @@ confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
 sensitivity <- confusion_matrix_rf$byClass['Sensitivity']
 specificity <- confusion_matrix_rf$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.66
-print(paste("Sensitivity:", round(sensitivity, 2)))
-print(paste("Specificity:", round(specificity, 2)))
+print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.67
+print(paste("Sensitivity:", round(sensitivity, 2))) #better 0.77
+print(paste("Specificity:", round(specificity, 2))) #better 0.6
 
 #ROC curve
 predictions_prob <- predict(rf_model, testData, type = "prob")[,2]
@@ -343,6 +394,34 @@ ggplot(predicted_df, aes(x = PredictedProbability, fill = TrueLabel)) +
   labs(title = "Histogram of Predicted Probabilities", x = "Predicted Probability", y = "Frequency") +
   scale_fill_manual(values = c("Not On Time" = "coral1", "On Time" = "aquamarine1"))
 
+
+#heatmap for predictive data
+confusion_matrix_data <- as.data.frame(confusion_matrix$table)
+confusion_matrix_data <- expand.grid(
+  Prediction = levels(testData$Reached.on.Time_Y.N),
+  Reference = levels(testData$Reached.on.Time_Y.N))
+confusion_matrix_data <- merge(
+  confusion_matrix_data, as.data.frame(confusion_matrix$table), 
+  by = c("Prediction", "Reference"), all.x = TRUE)
+confusion_matrix_data$Freq[is.na(confusion_matrix_data$Freq)] <- 0
+
+ggplot(confusion_matrix_data, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "gray80") +
+  geom_text(aes(label = Freq), color = "black", size = 4) +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Confusion Matrix Heatmap", x = "Actual", y = "Predicted") +
+  theme_minimal()+
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8)
+  )
+
+
+
+
 #####-------decision tree--------######
 tree_model <- rpart(Reached.on.Time_Y.N ~ ., data = trainData, method = "class")
 
@@ -351,12 +430,50 @@ predictions_tree <- predict(tree_model, testData, type = "class")
 
 #accuracy
 confusion_matrix_tree <- confusionMatrix(predictions_tree, testData$Reached.on.Time_Y.N)
-accuracy_tree <- confusion_matrix_tree$overall['Accuracy']
-print(paste("Accuracy:", round(accuracy_tree, 2))) #better: 0.68
+accuracy_dt <- confusion_matrix_tree$overall['Accuracy']
+sensitivity_dt <- confusion_matrix_tree$byClass['Sensitivity']
+specificity_dt <- confusion_matrix_tree$byClass['Specificity']
+print(paste("Accuracy:", round(accuracy_dt, 2))) #0.68
+print(paste("Sensitivity:", round(sensitivity_dt, 2))) #0.94
+print(paste("Specificity:", round(specificity_dt, 2))) #0.5
 
 #viisualization
 rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE, 
            box.palette = "RdYlGn", shadow.col = "gray", nn = TRUE)
+
+# ROC curve
+predictions_prob <- predict(tree_model, testData, type = "prob")[,2]
+roc_curve <- roc(testData$Reached.on.Time_Y.N, predictions_prob)
+plot(roc_curve, main = "ROC Curve", col = "blue")
+auc(roc_curve) #0.74
+
+# Add AUC to the plot
+auc_value <- auc(roc_curve)
+legend("bottomright", legend = paste("AUC =", round(auc_value, 2)), col = "blue", lwd = 2)
+
+
+#heatmap for predictive data
+
+confusion_matrix_tree_data <- as.data.frame(confusion_matrix_tree$table)
+confusion_matrix_tree_data$Freq[confusion_matrix_tree_data$Freq == 0] <- NA
+ggplot(confusion_matrix_tree_data, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "gray80") +
+  geom_text(aes(label = ifelse(is.na(Freq), "", Freq)), color = "black", size = 4) +
+  scale_fill_gradient(low = "white", high = "red", na.value = "white") +
+  labs(
+    title = "Confusion Matrix Heatmap (Decision Tree)",
+    x = "Actual",
+    y = "Predicted",
+    fill = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8)
+  )
 
 
 
