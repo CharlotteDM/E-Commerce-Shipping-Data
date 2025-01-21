@@ -10,6 +10,9 @@ library(xgboost)
 library(coefplot)
 library(pROC)
 library(smotefamily)
+install.packages("Cubist")
+library(Cubist)
+
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(path)
@@ -475,6 +478,8 @@ ggplot(confusion_matrix_tree_data, aes(x = Reference, y = Prediction, fill = Fre
     legend.text = element_text(size = 8)
   )
 
+#comparing models RF and DT
+
 # Tuning hyperparameters
 tree_model_tuned <- rpart(
   Reached.on.Time_Y.N ~ ., 
@@ -507,8 +512,7 @@ predictions_rf <- predict(model_rf, testData)
 # Evaluate accuracy
 confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
-print(paste("Random Forest Accuracy:", round(accuracy_rf, 2)))
-
+print(paste("Random Forest Accuracy:", round(accuracy_rf, 2))) #0.66
 
 # Variable Importance for Decision Tree
 print(varImp(tree_model, scale = FALSE))
@@ -516,6 +520,76 @@ print(varImp(tree_model, scale = FALSE))
 # Variable Importance for Random Forest
 importance_rf <- importance(model_rf)
 print(varImpPlot(model_rf, scale = F))
+
+
+#improving models with cubist fuunction
+# Converting Reached.on.Time_Y.N to numeric for regression-like Cubist
+trainData$Reached.on.Time_Y.N <- as.numeric(trainData$Reached.on.Time_Y.N) - 1
+testData$Reached.on.Time_Y.N <- as.numeric(testData$Reached.on.Time_Y.N) - 1
+
+# Train the Cubist model
+cubist_model <- cubist(
+  x = trainData[, -which(names(trainData) == "Reached.on.Time_Y.N")],
+  y = trainData$Reached.on.Time_Y.N,
+  committees = 10  # Number of committees (models)
+)
+print(summary(cubist_model))
+
+# Predict on the test set
+predictions_cubist <- predict(cubist_model, testData[, -which(names(testData) == "Reached.on.Time_Y.N")])
+
+# Convert predictions to binary classes
+predicted_classes_cubist <- ifelse(predictions_cubist > 0.5, "On Time", "Not On Time")
+predicted_classes_cubist <- factor(predicted_classes_cubist, levels = c("Not On Time", "On Time"))
+
+# Confusion matrix
+confusion_matrix_cubist <- confusionMatrix(
+  predicted_classes_cubist,
+  factor(testData$Reached.on.Time_Y.N, levels = c(0, 1), labels = c("Not On Time", "On Time"))
+)
+
+# Extract metrics
+accuracy_cubist <- confusion_matrix_cubist$overall["Accuracy"]
+sensitivity_cubist <- confusion_matrix_cubist$byClass["Sensitivity"]
+specificity_cubist <- confusion_matrix_cubist$byClass["Specificity"]
+
+# Print metrics
+print(paste("Accuracy:", round(accuracy_cubist, 2))) #0.68
+print(paste("Sensitivity:", round(sensitivity_cubist, 2))) #0.94
+print(paste("Specificity:", round(specificity_cubist, 2))) ##0.5
+
+# ROC Curve
+roc_curve_cubist <- roc(
+  testData$Reached.on.Time_Y.N,
+  predictions_cubist
+)
+plot(roc_curve_cubist, main = "ROC Curve (Cubist)", col = "blue")
+auc_value_cubist <- auc(roc_curve_cubist) #0.73
+legend("bottomright", legend = paste("AUC =", round(auc_value_cubist, 2)), col = "blue", lwd = 2)
+
+# Heatmap for predictive data
+confusion_matrix_cubist_data <- as.data.frame(confusion_matrix_cubist$table)
+confusion_matrix_cubist_data$Freq[confusion_matrix_cubist_data$Freq == 0] <- NA
+ggplot(confusion_matrix_cubist_data, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "gray80") +
+  geom_text(aes(label = ifelse(is.na(Freq), "", Freq)), color = "black", size = 4) +
+  scale_fill_gradient(low = "white", high = "red", na.value = "white") +
+  labs(
+    title = "Confusion Matrix Heatmap (Cubist)",
+    x = "Actual",
+    y = "Predicted",
+    fill = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8)
+  )
+
+
 
 
 
@@ -579,46 +653,6 @@ xgb.plot.importance(importance_matrix)
 
 
 
-
-
-
-
-###############################
-#------predictions models - clients rating-----#
-###############################
-
-#####-------regression model--------######
-
-
-model_customer <- lm(Customer_rating ~ ., data = trainData)
-predictions_customer <- predict(model_customer, testData)
-rmse_lm <- sqrt(mean((predictions_customer- testData$Customer_rating)^2))
-print(paste("RMSE:", round(rmse_lm, 2))) #RMSE = 1.41
-
-
-
-#####-------random forest--------######
-
-model_rf_customer <- randomForest(Customer_rating ~ ., data = trainData, ntree = 100, mtry = 3, importance = TRUE)
-
-predictions_rf_customer <- predict(model_rf_customer, testData)
-
-rmse_rf <- sqrt(mean((predictions_rf_customer - testData$Customer_rating)^2))
-print(paste("RMSE:", round(rmse_rf, 2))) #RMSE = 1.44
-
-importance(model_rf_customer) #the most important: customer care calls, weight in gms, cost of the product
-varImpPlot(model_rf_customer)
-
-
-
-#####-------decision tree--------######
-model_tree_customer <- rpart(Customer_rating ~ ., data = trainData, method = "anova")
-
-predictions_tree_customer <- predict(model_tree_customer, testData)
-
-rmse_tree_customer <- sqrt(mean((predictions_tree_customer - testData$Customer_rating)^2))
-
-print(paste("RMSE:", round(rmse_tree_customer, 2))) #RMSE = 1.41
 
 
 
