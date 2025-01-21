@@ -519,6 +519,70 @@ print(varImpPlot(model_rf, scale = F))
 
 
 
+#####-------xgboost--------######
+
+# converting variables to matrix
+train_matrix <- model.matrix(~ . - 1, data = trainData[, -which(names(trainData) == "Reached.on.Time_Y.N")])
+test_matrix <- model.matrix(~ . - 1, data = testData[, -which(names(testData) == "Reached.on.Time_Y.N")])
+
+str(train_matrix)
+
+# converting the result variable (label) to numbers: 0 and 1
+train_label <- as.numeric(trainData$Reached.on.Time_Y.N) - 1
+test_label <- as.numeric(testData$Reached.on.Time_Y.N) - 1
+
+# params setting
+params <- list(
+  objective = "binary:logistic", # Binary classification
+  eval_metric = "logloss",       # Evaluation metric
+  eta = 0.1,                     # Learning rate
+  max_depth = 6,                 # Max depth of trees
+  subsample = 0.8,               # Subsampling ratio
+  colsample_bytree = 0.8         # Fraction of features used per tree
+)
+
+# model training
+set.seed(123)
+xgb_model <- xgboost(
+  data = train_matrix,
+  label = train_label,
+  params = params,
+  nrounds = 100,              
+  verbose = 0                   
+)
+
+
+# predictions
+predictions_xgb <- predict(xgb_model, test_matrix)
+predicted_classes_xgb <- ifelse(predictions_xgb > 0.5, 1, 0)
+
+#conversion on factor
+predicted_classes_xgb <- factor(predicted_classes_xgb, levels = c(0, 1), labels = c("Not On Time", "On Time"))
+test_label_factor <- factor(test_label, levels = c(0, 1), labels = c("Not On Time", "On Time"))
+
+# Confusion matrix
+confusion_matrix_xgb <- confusionMatrix(predicted_classes_xgb, test_label_factor)
+accuracy_xgb <- confusion_matrix_xgb$overall['Accuracy']
+sensitivity_xgb <- confusion_matrix_xgb$byClass['Sensitivity']
+specificity_xgb <- confusion_matrix_xgb$byClass['Specificity']
+print(paste("Accuracy:", round(accuracy_xgb, 2)))
+print(paste("Sensitivity:", round(sensitivity_xgb, 2)))
+print(paste("Specificity:", round(specificity_xgb, 2)))
+
+#feature importance
+
+importance_matrix <- xgb.importance(model = xgb_model)
+print(importance_matrix)
+
+xgb.plot.importance(importance_matrix)
+
+
+
+
+
+
+
+
 ###############################
 #------predictions models - clients rating-----#
 ###############################
