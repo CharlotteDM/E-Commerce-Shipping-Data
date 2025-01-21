@@ -475,13 +475,47 @@ ggplot(confusion_matrix_tree_data, aes(x = Reference, y = Prediction, fill = Fre
     legend.text = element_text(size = 8)
   )
 
+# Tuning hyperparameters
+tree_model_tuned <- rpart(
+  Reached.on.Time_Y.N ~ ., 
+  data = trainData, 
+  method = "class",
+  control = rpart.control(cp = 0.01, maxdepth = 5, minsplit = 10)
+)
+
+# Prediction
+predictions_tree_tuned <- predict(tree_model_tuned, testData, type = "class")
+
+# Evaluate accuracy
+confusion_matrix_tree_tuned <- confusionMatrix(predictions_tree_tuned, testData$Reached.on.Time_Y.N)
+accuracy_tuned <- confusion_matrix_tree_tuned$overall['Accuracy']
+print(paste("Tuned Decision Tree Accuracy:", round(accuracy_tuned, 2)))
 
 
+# Random Forest Model
+model_rf <- randomForest(
+  Reached.on.Time_Y.N ~ ., 
+  data = trainData, 
+  ntree = 200, 
+  mtry = sqrt(ncol(trainData) - 1), 
+  importance = TRUE
+)
+
+# Prediction
+predictions_rf <- predict(model_rf, testData)
+
+# Evaluate accuracy
+confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_Y.N)
+accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
+print(paste("Random Forest Accuracy:", round(accuracy_rf, 2)))
 
 
+# Variable Importance for Decision Tree
+print(varImp(tree_model, scale = FALSE))
 
-
-
+# Variable Importance for Random Forest
+importance_rf <- importance(model_rf)
+print(varImpPlot(model_rf, scale = F))
 
 
 
