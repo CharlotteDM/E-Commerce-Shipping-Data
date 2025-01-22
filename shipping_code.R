@@ -207,8 +207,11 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
     axis.title.y = element_text(color = "orange4", size = 12, hjust = 0.5, face = "bold")
   )
 
-ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N)) +
-  geom_bar(position = "dodge", stat = "count") +
+
+
+
+ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
+  geom_bar(position = "dodge", stat = "count", color = "black") +
   labs(
     title = "Customer Ratings by On-Time Delivery",
     x = "Customer Rating",
@@ -223,8 +226,21 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.
   theme(
     plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
     axis.title.x = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
+    legend.position = "top"
+  )
+  scale_fill_manual(
+    values = c("Not On Time" = "tomato2", "On Time" = "seagreen3"),
+    labels = c("Not On Time" = "No", "On Time" = "Yes")
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
     axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
   )
+
+
 
 ###############################
 #------predictions models - delivery time-----#
@@ -235,7 +251,10 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.
 shipping_data$Reached.on.Time_Y.N <- factor(shipping_data$Reached.on.Time_Y.N, 
                                             levels = c(0, 1), 
                                             labels = c("Not On Time", "On Time"))
-
+  
+  levels(shipping_data$Reached.on.Time_Y.N)
+  table(shipping_data$Reached.on.Time_Y.N)
+  
 #train and test data set
 set.seed(123)
 trainIndex <- createDataPartition(shipping_data$Reached.on.Time_Y.N, p = 0.8, list = FALSE)
@@ -313,9 +332,9 @@ confusion_matrix_rf <- confusionMatrix(predictions_rf, testData$Reached.on.Time_
 accuracy_rf <- confusion_matrix_rf$overall['Accuracy']
 sensitivity <- confusion_matrix_rf$byClass['Sensitivity']
 specificity <- confusion_matrix_rf$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.65
-print(paste("Sensitivity:", round(sensitivity, 2))) #0.69
-print(paste("Specificity:", round(specificity, 2))) #0.62
+print(paste("Accuracy:", round(accuracy_rf, 2))) #better: 0.66
+print(paste("Sensitivity:", round(sensitivity, 2))) #0.7
+print(paste("Specificity:", round(specificity, 2))) #0.63
 
 importance(model_rf) #the most important: weight, discount, cost, prior purchases
 varImpPlot(model_rf)
@@ -594,64 +613,6 @@ ggplot(confusion_matrix_cubist_data, aes(x = Reference, y = Prediction, fill = F
 
 
 
-#####-------xgboost--------######
-
-# converting variables to matrix
-train_matrix <- model.matrix(~ . - 1, data = trainData[, -which(names(trainData) == "Reached.on.Time_Y.N")])
-test_matrix <- model.matrix(~ . - 1, data = testData[, -which(names(testData) == "Reached.on.Time_Y.N")])
-
-str(train_matrix)
-
-# converting the result variable (label) to numbers: 0 and 1
-train_label <- as.numeric(trainData$Reached.on.Time_Y.N) - 1
-test_label <- as.numeric(testData$Reached.on.Time_Y.N) - 1
-
-# params setting
-params <- list(
-  objective = "binary:logistic", # Binary classification
-  eval_metric = "logloss",       # Evaluation metric
-  eta = 0.1,                     # Learning rate
-  max_depth = 6,                 # Max depth of trees
-  subsample = 0.8,               # Subsampling ratio
-  colsample_bytree = 0.8         # Fraction of features used per tree
-)
-
-# model training
-set.seed(123)
-xgb_model <- xgboost(
-  data = train_matrix,
-  label = train_label,
-  params = params,
-  nrounds = 100,              
-  verbose = 0                   
-)
-
-
-# predictions
-predictions_xgb <- predict(xgb_model, test_matrix)
-predicted_classes_xgb <- ifelse(predictions_xgb > 0.5, 1, 0)
-
-#conversion on factor
-predicted_classes_xgb <- factor(predicted_classes_xgb, levels = c(0, 1), labels = c("Not On Time", "On Time"))
-test_label_factor <- factor(test_label, levels = c(0, 1), labels = c("Not On Time", "On Time"))
-
-# Confusion matrix
-confusion_matrix_xgb <- confusionMatrix(predicted_classes_xgb, test_label_factor)
-accuracy_xgb <- confusion_matrix_xgb$overall['Accuracy']
-sensitivity_xgb <- confusion_matrix_xgb$byClass['Sensitivity']
-specificity_xgb <- confusion_matrix_xgb$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy_xgb, 2)))
-print(paste("Sensitivity:", round(sensitivity_xgb, 2)))
-print(paste("Specificity:", round(specificity_xgb, 2)))
-
-#feature importance
-
-importance_matrix <- xgb.importance(model = xgb_model)
-print(importance_matrix)
-
-xgb.plot.importance(importance_matrix)
-
-
 
 #########-----------------------------------------------##########
 #selecting significant variables - Boruta#
@@ -667,6 +628,5 @@ importances <- importances[importances$decision != "Rejected",
 importances[order(-importances$meanImp), ] #the most important factors from the highest to the lowest importance
 boruta_plot <- plot(boruta_shipping, ces.axis = 0.3, las = 2, xlab = "", 
                     main = "Feature importance")
-
 
 
