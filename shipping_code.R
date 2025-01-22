@@ -12,6 +12,7 @@ library(pROC)
 library(smotefamily)
 install.packages("Cubist")
 library(Cubist)
+library(Boruta)
 
 
 path <- dirname(rstudioapi::getActiveDocumentContext()$path)
@@ -651,44 +652,21 @@ print(importance_matrix)
 xgb.plot.importance(importance_matrix)
 
 
-#Voting Ensemble for models
-# predictions for models
-logistic_pred <- ifelse(predict(model_delivery, newdata = testData, type = "response") > 0.5, "On Time", "Not On Time")
-rf_pred <- predict(model_rf, testData)
-tree_pred <- predict(tree_model, testData, type = "class")
-cubist_pred <- ifelse(predict(cubist_model, testData[, -which(names(testData) == "Reached.on.Time_Y.N")]) > 0.5, "On Time", "Not On Time")
-xgb_pred <- ifelse(predict(xgb_model, test_matrix) > 0.5, "On Time", "Not On Time")
 
-# Joining predictions
-predictions <- data.frame(
-  Logistic = logistic_pred,
-  RandomForest = rf_pred,
-  DecisionTree = tree_pred,
-  Cubist = cubist_pred,
-  XGBoost = xgb_pred
-)
+#########-----------------------------------------------##########
+#selecting significant variables - Boruta#
+#########---------------------------------------------##########
 
-# Ensure levels match between predictions and actual labels
-voting_pred <- apply(predictions, 1, function(row) {
-  table(row) %>% which.max() %>% names()
-})
 
-# Set the same levels for factor
-voting_pred <- factor(voting_pred, levels = levels(testData$Reached.on.Time_Y.N))
+boruta_shipping <- Boruta(Reached.on.Time_Y.N ~ ., data = trainData, doTrace = 0)
+rough_fix_mod <- TentativeRoughFix(boruta_shipping)
+boruta_signif <- getSelectedAttributes(rough_fix_mod) #the most important factors
+importances <- attStats(rough_fix_mod)
+importances <- importances[importances$decision != "Rejected", 
+                           c("meanImp", "decision")]
+importances[order(-importances$meanImp), ] #the most important factors from the highest to the lowest importance
+boruta_plot <- plot(boruta_shipping, ces.axis = 0.3, las = 2, xlab = "", 
+                    main = "Feature importance")
 
-# Evaluation of effectiveness
-conf_matrix_voting <- confusionMatrix(voting_pred, testData$Reached.on.Time_Y.N)
-accuracy_voting <- conf_matrix_voting$overall["Accuracy"]
-sensitivity_voting <- conf_matrix_voting$byClass["Sensitivity"]
-specificity_voting <- conf_matrix_voting$byClass["Specificity"]
 
-print(paste("Accuracy (Voting):", round(accuracy_voting, 2)))
-print(paste("Sensitivity (Voting):", round(sensitivity_voting, 2)))
-print(paste("Specificity (Voting):", round(specificity_voting, 2)))
-
-# ROC Curve for Voting Ensemble
-roc_voting <- roc(testData$Reached.on.Time_Y.N, as.numeric(voting_pred == "On Time"))
-plot(roc_voting, main = "ROC Curve (Voting Ensemble)", col = "blue")
-auc_value_voting <- auc(roc_voting)
-legend("bottomright", legend = paste("AUC =", round(auc_value_voting, 2)), col = "blue", lwd = 2)
 
