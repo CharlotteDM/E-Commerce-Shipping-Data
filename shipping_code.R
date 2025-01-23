@@ -44,12 +44,13 @@ shipping_data$Gender <- as.factor(shipping_data$Gender)
 #####
 #------data visualizations-----#
 #####
+#items in every warehuse block
 shipping_data_summary <- shipping_data %>%
   group_by(Warehouse_block) %>%
   summarise(count = n())
 
 ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
-  geom_bar(stat = "identity", fill = "lightgreen") +
+  geom_bar(stat = "identity", fill = "lightgreen", color = "black") +
   geom_text(aes(label = count), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Warehouse Block") +
   theme_minimal() +
@@ -58,9 +59,9 @@ ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
     axis.title.x = element_text(color="green4", size=12, hjust = 0.5, face="bold"),
     axis.title.y = element_text(color="green4", size=12, hjust = 0.5, face="bold")) 
   
-
+#different shipping methods
 ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
-  geom_bar(fill = "skyblue") +
+  geom_bar(fill = "skyblue", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Using different shipping methods") +
   theme_minimal() +
@@ -69,9 +70,9 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
     axis.title.x = element_text(color="steelblue4", size=12, hjust = 0.5, face="bold"),
     axis.title.y = element_text(color="steelblue4", size=12, hjust = 0.5, face="bold")) 
 
-
+#Product importance
 ggplot(shipping_data, aes(x = Product_importance, fill = Product_importance)) +
-  geom_bar() +
+  geom_bar(color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust =1.5, color = "black", size = 3.5) +
   labs(title = "Product Importance") +
   theme_minimal() +
@@ -94,7 +95,7 @@ ggplot(shipping_data, aes(x = Customer_rating)) +
     axis.title.y = element_text(color="pink4", size=12, hjust = 0.5, face="bold")) 
 
 
-
+#number of Custiomer Care Calls
 ggplot(shipping_data, aes(x = factor(Customer_care_calls))) +
   geom_bar(fill = "dodgerblue", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
@@ -160,6 +161,7 @@ ggplot(shipping_data, aes(x = Warehouse_block, y = Cost_of_the_Product)) +
     axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
   )
 
+#Average Customer Care Calls by Warehouse Block
 ggplot(shipping_data, aes(x = Warehouse_block, y = Customer_care_calls)) +
   stat_summary(fun = mean, geom = "bar", fill = "lightgreen", color = "black") +
   stat_summary(fun = mean, geom = "text", aes(label = round(..y.., 2)), vjust = 1.5) +
@@ -175,6 +177,7 @@ ggplot(shipping_data, aes(x = Warehouse_block, y = Customer_care_calls)) +
     axis.title.y = element_text(color = "green4", size = 12, hjust = 0.5, face = "bold")
   )
 
+#Average Product Cost by Gender
 ggplot(shipping_data, aes(x = Gender, y = Cost_of_the_Product)) +
   stat_summary(fun = mean, geom = "bar", fill = "skyblue", color = "black") +
   stat_summary(fun = mean, geom = "text", aes(label = round(..y.., 2)), vjust = 1.5) +
@@ -190,6 +193,7 @@ ggplot(shipping_data, aes(x = Gender, y = Cost_of_the_Product)) +
     axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
   )
 
+#weight and Mode of Shipment
 ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
   geom_boxplot(fill = "lightgoldenrod2", color = "black") +
   geom_jitter(color = "darkorange2", width = 0.2, alpha = 0.6) +
@@ -209,6 +213,14 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
 
 
 
+##Question1: What was Customer Rating? And was the product delivered on time?
+table(shipping_data$Customer_rating, shipping_data$Reached.on.Time_Y.N)
+
+shipping_data$Reached.on.Time_Y.N <- factor(
+  shipping_data$Reached.on.Time_Y.N,
+  levels = c(0, 1), 
+  labels = c("Not On Time", "On Time")
+)
 
 ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
   geom_bar(position = "dodge", stat = "count", color = "black") +
@@ -230,43 +242,34 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.
     axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
     legend.position = "top"
   )
-  scale_fill_manual(
-    values = c("Not On Time" = "tomato2", "On Time" = "seagreen3"),
-    labels = c("Not On Time" = "No", "On Time" = "Yes")
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
-    axis.title.x = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
-    axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold")
-  )
 
 
-##Question1: What was Customer Rating? And was the product delivered on time?
-  customer_rating_and_delivery <- shipping_data %>%
-    select(Customer_rating, Reached.on.Time_Y.N)
+
+
+  
   
  #Question2: Is Customer query is being answered?
+unique(shipping_data$Customer_care_calls)  
+unique(shipping_data$Reached.on.Time_Y.N)
 
-  is_query_answered <- function(customer_care_calls) {
-    if (customer_care_calls > 0) {
-      return("Yes")
-    } else {
-      return("No")
-    }
-  }
-  shipping_data <- shipping_data %>%
-    mutate(Query_Answered = sapply(Customer_care_calls, is_query_answered))
-  print(shipping_data)
+mean_calls <- mean(shipping_data$Customer_care_calls)
+mean_calls
+
+table(shipping_data$Customer_care_calls <= mean_calls, shipping_data$Reached.on.Time_Y.N)
+
   
   #Question3:If Product importance is high. having higest rating or being delivered on time?
+high_importance <- subset(shipping_data, Product_importance == "high")
+high_ratings <- table(high_importance$Customer_rating == max(shipping_data$Customer_rating))
+high_ratings #186 of products have the highest rating 
+percentage_high_rating <- 186 / (762 + 186) * 100
+percentage_high_rating #19.62%
 
-  high_importance_products <- shipping_data %>%
-    filter(Product_importance == "high") %>%
-    mutate(Highest_Rating_or_On_Time = ifelse(Customer_rating == max(Customer_rating) | Reached.on.Time_Y.N == "Y", "Yes", "No"))
-  
-  print(high_importance_products)
-  
+on_time <- table(high_importance$Reached.on.Time_Y.N)
+on_time #332 of high importance products didn't reach on time, 616 - on time
+percentage_on_time <- 616 / (332 + 616) * 100
+percentage_on_time  #64.97%
+
 ###############################
 #------predictions models - delivery time-----#
 ###############################
