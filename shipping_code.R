@@ -212,6 +212,7 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
 
 ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
   geom_bar(position = "dodge", stat = "count", color = "black") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.9), vjust = -0.5) +
   labs(
     title = "Customer Ratings by On-Time Delivery",
     x = "Customer Rating",
@@ -241,7 +242,31 @@ ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.
   )
 
 
+##Question1: What was Customer Rating? And was the product delivered on time?
+  customer_rating_and_delivery <- shipping_data %>%
+    select(Customer_rating, Reached.on.Time_Y.N)
+  
+ #Question2: Is Customer query is being answered?
 
+  is_query_answered <- function(customer_care_calls) {
+    if (customer_care_calls > 0) {
+      return("Yes")
+    } else {
+      return("No")
+    }
+  }
+  shipping_data <- shipping_data %>%
+    mutate(Query_Answered = sapply(Customer_care_calls, is_query_answered))
+  print(shipping_data)
+  
+  #Question3:If Product importance is high. having higest rating or being delivered on time?
+
+  high_importance_products <- shipping_data %>%
+    filter(Product_importance == "high") %>%
+    mutate(Highest_Rating_or_On_Time = ifelse(Customer_rating == max(Customer_rating) | Reached.on.Time_Y.N == "Y", "Yes", "No"))
+  
+  print(high_importance_products)
+  
 ###############################
 #------predictions models - delivery time-----#
 ###############################
