@@ -276,9 +276,9 @@ percentage_on_time  #64.97%
 
 
 # Converting column: Reached.on.Time_Y.N on factor
-shipping_data$Reached.on.Time_Y.N <- factor(shipping_data$Reached.on.Time_Y.N, 
-                                            levels = c(0, 1), 
-                                            labels = c("Not On Time", "On Time"))
+#shipping_data$Reached.on.Time_Y.N <- factor(shipping_data$Reached.on.Time_Y.N, 
+                                         #   levels = c(0, 1), 
+                                          #  labels = c("Not On Time", "On Time"))
   
   levels(shipping_data$Reached.on.Time_Y.N)
   table(shipping_data$Reached.on.Time_Y.N)
@@ -488,7 +488,7 @@ print(paste("Accuracy:", round(accuracy_dt, 2))) #0.68
 print(paste("Sensitivity:", round(sensitivity_dt, 2))) #0.94
 print(paste("Specificity:", round(specificity_dt, 2))) #0.5
 
-#viisualization
+#visualization
 rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE, 
            box.palette = "RdYlGn", shadow.col = "gray", nn = TRUE)
 
@@ -570,7 +570,7 @@ importance_rf <- importance(model_rf)
 print(varImpPlot(model_rf, scale = F))
 
 
-#improving models with cubist fuunction
+#improving models with cubist function
 # Converting Reached.on.Time_Y.N to numeric for regression-like Cubist
 trainData$Reached.on.Time_Y.N <- as.numeric(trainData$Reached.on.Time_Y.N) - 1
 testData$Reached.on.Time_Y.N <- as.numeric(testData$Reached.on.Time_Y.N) - 1
