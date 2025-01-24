@@ -44,12 +44,12 @@ shipping_data$Gender <- as.factor(shipping_data$Gender)
 #####
 #------data visualizations-----#
 #####
-#items in every warehuse block
+#items in every warehouse block
 shipping_data_summary <- shipping_data %>%
   group_by(Warehouse_block) %>%
   summarise(count = n())
 
-ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
+plot_1 <- ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
   geom_bar(stat = "identity", fill = "lightgreen", color = "black") +
   geom_text(aes(label = count), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Warehouse Block") +
@@ -60,7 +60,7 @@ ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
     axis.title.y = element_text(color="green4", size=12, hjust = 0.5, face="bold")) 
   
 #different shipping methods
-ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
+plot_2 <- ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
   geom_bar(fill = "skyblue", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Using different shipping methods") +
@@ -71,7 +71,7 @@ ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
     axis.title.y = element_text(color="steelblue4", size=12, hjust = 0.5, face="bold")) 
 
 #Product importance
-ggplot(shipping_data, aes(x = Product_importance, fill = Product_importance)) +
+plot_3 <- ggplot(shipping_data, aes(x = Product_importance, fill = Product_importance)) +
   geom_bar(color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust =1.5, color = "black", size = 3.5) +
   labs(title = "Product Importance") +
@@ -83,8 +83,8 @@ theme(
   legend.position = "none") 
 
 
-
-ggplot(shipping_data, aes(x = Customer_rating)) +
+#customer ratings
+plot_4 <- ggplot(shipping_data, aes(x = Customer_rating)) +
   geom_bar(fill = "pink", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(title = "Customer Rating") +
@@ -96,7 +96,7 @@ ggplot(shipping_data, aes(x = Customer_rating)) +
 
 
 #number of Custiomer Care Calls
-ggplot(shipping_data, aes(x = factor(Customer_care_calls))) +
+plot_5 <- ggplot(shipping_data, aes(x = factor(Customer_care_calls))) +
   geom_bar(fill = "dodgerblue", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
   labs(
@@ -114,7 +114,7 @@ ggplot(shipping_data, aes(x = factor(Customer_care_calls))) +
 unique(shipping_data$Customer_care_calls)
 
 #Average Rating for Gender
-ggplot(shipping_data, aes(x = Gender, y = Customer_rating)) +
+plot_6 <- ggplot(shipping_data, aes(x = Gender, y = Customer_rating)) +
   geom_boxplot() +
   labs(title = "Customer Rating & Gender") +
   theme_minimal() +
@@ -130,7 +130,7 @@ print(average_ratings)
 numerical_vars <- shipping_data[sapply(shipping_data, is.numeric)]
 cor_matrix <- cor(numerical_vars, use = "complete.obs")
 
-cor_matrix_melted <- melt(cor_matrix)
+heatmap <-cor_matrix_melted <- melt(cor_matrix)
 ggplot(cor_matrix_melted, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile(color = "white") +  
   scale_fill_gradient2(
@@ -146,7 +146,7 @@ ggplot(cor_matrix_melted, aes(x = Var1, y = Var2, fill = value)) +
         axis.title.y = element_blank())
    
 #charts showing the relationships between variables
-ggplot(shipping_data, aes(x = Warehouse_block, y = Cost_of_the_Product)) +
+plot_7 <- ggplot(shipping_data, aes(x = Warehouse_block, y = Cost_of_the_Product)) +
   stat_summary(fun = mean, geom = "bar", fill = "skyblue", color = "black") +
   stat_summary(fun = mean, geom = "text", aes(label = round(..y.., 2)), vjust = 1.5) +
   labs(
@@ -162,7 +162,7 @@ ggplot(shipping_data, aes(x = Warehouse_block, y = Cost_of_the_Product)) +
   )
 
 #Average Customer Care Calls by Warehouse Block
-ggplot(shipping_data, aes(x = Warehouse_block, y = Customer_care_calls)) +
+plot_8 <- ggplot(shipping_data, aes(x = Warehouse_block, y = Customer_care_calls)) +
   stat_summary(fun = mean, geom = "bar", fill = "lightgreen", color = "black") +
   stat_summary(fun = mean, geom = "text", aes(label = round(..y.., 2)), vjust = 1.5) +
   labs(
@@ -178,7 +178,7 @@ ggplot(shipping_data, aes(x = Warehouse_block, y = Customer_care_calls)) +
   )
 
 #Average Product Cost by Gender
-ggplot(shipping_data, aes(x = Gender, y = Cost_of_the_Product)) +
+plot_9 <- ggplot(shipping_data, aes(x = Gender, y = Cost_of_the_Product)) +
   stat_summary(fun = mean, geom = "bar", fill = "skyblue", color = "black") +
   stat_summary(fun = mean, geom = "text", aes(label = round(..y.., 2)), vjust = 1.5) +
   labs(
@@ -194,7 +194,7 @@ ggplot(shipping_data, aes(x = Gender, y = Cost_of_the_Product)) +
   )
 
 #weight and Mode of Shipment
-ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
+plot_10 <- ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
   geom_boxplot(fill = "lightgoldenrod2", color = "black") +
   geom_jitter(color = "darkorange2", width = 0.2, alpha = 0.6) +
   stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "firebrick4") +
@@ -222,7 +222,7 @@ shipping_data$Reached.on.Time_Y.N <- factor(
   labels = c("Not On Time", "On Time")
 )
 
-ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
+plot_11 <- ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
   geom_bar(position = "dodge", stat = "count", color = "black") +
   geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.9), vjust = -0.5) +
   labs(

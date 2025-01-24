@@ -6,25 +6,129 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = getwd())
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+library(knitr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+library(xgboost)
+library(coefplot)
+library(pROC)
+library(smotefamily)
+library(Cubist)
+library(Boruta)
+library(htmlwidgets)
+source("shipping_code.R")
 ```
 
-## R Markdown
+## Introduction
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+An international e-commerce company specializing in electronic products aims to analyze its customer database to gain valuable insights and improve operational efficiency. The company is leveraging advanced machine learning techniques to better understand factors influencing shipment delivery and customer behavior.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+### Dataset Overview
 
-```{r cars}
-summary(cars)
+The dataset used for analysis contains 10,999 observations across 12 variables, providing comprehensive details about customers, products, and shipping logistics. Below is a brief description of the key variables:
+
+- **ID**: Unique identifier for each customer.
+- **Warehouse block**: The company’s warehouse is divided into blocks labeled A, B, C, D, and E.
+- **Mode of shipment**: Methods of product shipment include Ship, Flight, and Road.
+- **Customer care calls**: Number of calls made by customers regarding shipment inquiries.
+- **Customer rating**: Ratings provided by customers, ranging from 1 (worst) to 5 (best).
+- **Cost of the product**: Price of the product in USD.
+- **Prior purchases**: Number of purchases made by the customer prior to the current one.
+- **Product importance**: The importance level of the product, categorized as low, medium, or high.
+- **Gender**: Gender of the customer (Male or Female).
+- **Discount offered**: Discount applied to the product.
+- **Weight in grams**: Weight of the product in grams.
+- **Reached on time**: Target variable indicating delivery status, where:
+  - `0`: Product did not reached on time.
+  - `1`: Product reached on time.
+  
+### **Goal of the Analysis**
+
+The primary goal of this analysis is to gain insights from the customer shipping data of an e-commerce company. The objective is to explore, visualize relationships within the data, and build predictive models that can forecast whether a shipment will arrive on time or not. By understanding the key factors influencing on-time delivery, we aim to create a robust model that can assist in decision-making and improve operational efficiency.
+
+The analysis will begin with a thorough exploration of the dataset, followed by visualization of key relationships between variables. This will be followed by the development of predictive models using machine learning techniques to accurately predict on-time deliveries.
+  
+## Data Exploration
+
+### **Objective**
+
+In this section, we explore the dataset to understand its structure, check for missing values, and prepare the data for further analysis.
+
+### **Structure and Summary**
+
+First, we take a look at the general structure of the data and check for missing values:
+
+```{r shipping_data, echo=FALSE}
+summary(shipping_data)
 ```
 
-## Including Plots
+###**Data Preparation**
 
-You can also embed plots, for example:
+To simplify the data analysis, unnecessary columns are removed, and categorical data is transformed into factors:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+- Unnecessary columns such as ID are removed.
+- Categorical columns such as Warehouse_block, Mode_of_Shipment, Product_importance, and Gender are transformed into factors for better handling in machine learning models.
+
+## Data Exploration
+
+### **Items in Warehouse Blocks**
+
+In this visualization, we see the distribution of products across different warehouse blocks, highlighting where the most inventory is held.
+
+
+```{r plot_1=plot, dev='png', out.width="150%", echo=FALSE}
+plot(plot_1)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### **Different Shipping Methods**
+
+This visualization represents the distribution of shipping methods used by the company.
+
+```{r plot_2=plot, dev='png', out.width="150%", echo=FALSE}
+plot(plot_2)
+```
+
+### **Customer Rating**
+
+This bar chart shows how customers rate products in terms of their satisfaction.
+
+```{r plot_4=plot, dev='png', out.width="150%", echo=FALSE}
+plot(plot_4)
+```
+
+### **Weight by Mode of Shipment**
+
+This boxplot illustrates the distribution of product weights across different shipping methods.
+
+```{r plot_10=plot, dev='png', out.width="150%", echo=FALSE}
+plot(plot_10)
+```
+
+### **Ratings and On-Time Delivery**
+
+This bar chart illustrates how customer ratings are distributed based on whether the products were delivered on time or not. It highlights potential relationships between delivery punctuality and customer satisfaction levels.
+
+```{r plot_11=plot, dev='png', out.width="150%", echo=FALSE}
+plot(plot_11)
+```
+
+### **Correlation Between Numerical Variables**
+
+The heatmap provides a clear visualization of the correlations between numerical variables in the dataset. It helps identify relationships and dependencies, which could be useful for decision-making and further analysis.
+
+```{r heatmap=plot, dev='png', out.width="150%", echo=FALSE}
+plot(heatmap)
+```
+
+
+## References
+
+- Data Source: [Kaggle](https://www.kaggle.com/datasets/prachi13/customer-analytics/data)
