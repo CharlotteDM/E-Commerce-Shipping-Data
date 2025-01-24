@@ -9,6 +9,7 @@ library(rpart.plot)
 library(xgboost)
 library(coefplot)
 library(pROC)
+library(e1071)
 library(smotefamily)
 install.packages("Cubist")
 library(Cubist)
@@ -63,7 +64,7 @@ plot_1 <- ggplot(shipping_data_summary, aes(x = Warehouse_block, y = count)) +
 plot_2 <- ggplot(shipping_data, aes(x = Mode_of_Shipment)) +
   geom_bar(fill = "skyblue", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
-  labs(title = "Using different shipping methods") +
+  labs(title = "Using Different Shipping Methods", x = "Shipping Way") +
   theme_minimal() +
   theme( 
     plot.title = element_text(color="royalblue4", size=14, hjust = 0.5, face="bold"),
@@ -130,8 +131,9 @@ print(average_ratings)
 numerical_vars <- shipping_data[sapply(shipping_data, is.numeric)]
 cor_matrix <- cor(numerical_vars, use = "complete.obs")
 
-heatmap <-cor_matrix_melted <- melt(cor_matrix)
-ggplot(cor_matrix_melted, aes(x = Var1, y = Var2, fill = value)) +
+cor_matrix_melted <- melt(cor_matrix)
+
+heatmap <- ggplot(cor_matrix_melted, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile(color = "white") +  
   scale_fill_gradient2(
     low = "blue", high = "red", mid = "white",
@@ -253,9 +255,16 @@ unique(shipping_data$Customer_care_calls)
 unique(shipping_data$Reached.on.Time_Y.N)
 
 mean_calls <- mean(shipping_data$Customer_care_calls)
-mean_calls
+mean_calls<- round(mean_calls, 0)
 
-table(shipping_data$Customer_care_calls <= mean_calls, shipping_data$Reached.on.Time_Y.N)
+# Create a contingency table
+customer_care_table <- table(shipping_data$Customer_care_calls <= mean_calls, 
+                             shipping_data$Reached.on.Time_Y.N)
+colnames(customer_care_table) <- c("Not On Time", "On Time")
+rownames(customer_care_table) <- c("> Mean Calls", "≤ Mean Calls")
+
+# Display the table
+customer_care_table
 
   
   #Question3:If Product importance is high. having higest rating or being delivered on time?
@@ -494,20 +503,18 @@ rpart.plot(tree_model, type = 3, extra = 101, fallen.leaves = TRUE,
 
 # ROC curve
 predictions_prob <- predict(tree_model, testData, type = "prob")[,2]
-roc_curve <- roc(testData$Reached.on.Time_Y.N, predictions_prob)
-plot(roc_curve, main = "ROC Curve", col = "blue")
-auc(roc_curve) #0.74
+roc_curve_dt <- roc(testData$Reached.on.Time_Y.N, predictions_prob)
+plot(roc_curve_dt, main = "ROC Curve", col = "blue")
+auc(roc_curve_dt) #0.74
 
 # Add AUC to the plot
-auc_value <- auc(roc_curve)
-legend("bottomright", legend = paste("AUC =", round(auc_value, 2)), col = "blue", lwd = 2)
-
+auc_value_dt <- auc(roc_curve_dt); plot(roc_curve_dt); legend("bottomright", legend = paste("AUC =", round(auc_value_dt, 2)), col = "blue", lwd = 2)
 
 #heatmap for predictive data
 
 confusion_matrix_tree_data <- as.data.frame(confusion_matrix_tree$table)
 confusion_matrix_tree_data$Freq[confusion_matrix_tree_data$Freq == 0] <- NA
-ggplot(confusion_matrix_tree_data, aes(x = Reference, y = Prediction, fill = Freq)) +
+heatmap_dt <- ggplot(confusion_matrix_tree_data, aes(x = Reference, y = Prediction, fill = Freq)) +
   geom_tile(color = "gray80") +
   geom_text(aes(label = ifelse(is.na(Freq), "", Freq)), color = "black", size = 4) +
   scale_fill_gradient(low = "white", high = "red", na.value = "white") +
@@ -638,8 +645,51 @@ ggplot(confusion_matrix_cubist_data, aes(x = Reference, y = Prediction, fill = F
   )
 
 
+#####-------svm--------######
+svm_model <- svm(Reached.on.Time_Y.N ~ ., data = trainData, probability = TRUE)
 
+#prediction
+predictions_svm <- predict(svm_model, testData, probability = TRUE)
+predictions_prob_svm <- attr(predictions_svm, "probabilities")[,2]
 
+#confusion matrix 
+confusion_matrix_svm <- confusionMatrix(predictions_svm, testData$Reached.on.Time_Y.N)
+accuracy_svm <- confusion_matrix_svm$overall['Accuracy']
+sensitivity_svm <- confusion_matrix_svm$byClass['Sensitivity']
+specificity_svm <- confusion_matrix_svm$byClass['Specificity']
+print(paste("Accuracy:", round(accuracy_svm, 2)))
+print(paste("Sensitivity:", round(sensitivity_svm, 2)))
+print(paste("Specificity:", round(specificity_svm, 2)))
+
+# ROC curve
+roc_curve_svm <- roc(testData$Reached.on.Time_Y.N, predictions_prob_svm)
+plot(roc_curve_svm, main = "ROC Curve (SVM)", col = "blue")
+auc_value_svm <- auc(roc_curve_svm)
+legend("bottomright", legend = paste("AUC =", round(auc_value_svm, 2)), col = "blue", lwd = 2)
+
+# Heatmap for prediction
+confusion_matrix_svm_data <- as.data.frame(confusion_matrix_svm$table)
+confusion_matrix_svm_data$Freq[confusion_matrix_svm_data$Freq == 0] <- NA
+heatmap_svm <- ggplot(confusion_matrix_svm_data, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile(color = "gray80") +
+  geom_text(aes(label = ifelse(is.na(Freq), "", Freq)), color = "black", size = 4) +
+  scale_fill_gradient(low = "white", high = "red", na.value = "white") +
+  labs(
+    title = "Confusion Matrix Heatmap (SVM)",
+    x = "Actual",
+    y = "Predicted",
+    fill = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 8)
+  )
+
+print(heatmap_svm)
 
 
 #########-----------------------------------------------##########
