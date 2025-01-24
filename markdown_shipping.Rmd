@@ -1,6 +1,6 @@
 ---
 title: "Shipping Prediction Models"
-author: "Karolina DM"
+author: "Karolina Dyrla-Mularczyk"
 date: "2025-01-23"
 output: html_document
 ---
@@ -77,7 +77,7 @@ To simplify the data analysis, unnecessary columns are removed, and categorical 
 - Unnecessary columns such as ID are removed.
 - Categorical columns such as Warehouse_block, Mode_of_Shipment, Product_importance, and Gender are transformed into factors for better handling in machine learning models.
 
-## Data Exploration
+### Data Exploration
 
 ### **Items in Warehouse Blocks**
 
@@ -116,7 +116,7 @@ plot(plot_10)
 
 This bar chart illustrates how customer ratings are distributed based on whether the products were delivered on time or not. It highlights potential relationships between delivery punctuality and customer satisfaction levels.
 
-```{r plot_11=plot, dev='png', out.width="150%", echo=FALSE}
+```{r plot_11=plot, dev='png', out.width="150%", echo=FALSE, warning=FALSE}
 plot(plot_11)
 ```
 
@@ -128,6 +128,71 @@ The heatmap provides a clear visualization of the correlations between numerical
 plot(heatmap)
 ```
 
+### **Average Number of Customer Care Calls and Delivery Timeliness**
+
+The average number of customer care calls was __`r mean_calls`__ . The table below shows the comparison of deliveries being on time or not based on whether the number of customer care calls was above or below the average:
+
+```{r customer_care_table, echo=FALSE}
+kable(customer_care_table)
+```
+
+There is a noticeable trend where higher customer care call frequency correlates with a higher number of late deliveries. This suggests that customers who have more inquiries or problems tend to experience more delivery delays.
+It can be inferred that customer queries are likely the result of issues with delivery timing. This implies that customer support may not be addressing all issues promptly, or there could be too many queries related to delivery delays.
+
+
+### **Analysis of High-Importance Products: Ratings and Delivery Timeliness**
+
+We analyzed the high-importance products to determine whether they received the highest customer ratings and whether they were delivered on time.
+
+High Ratings for High-Importance Products:
+Out of the high-importance products, 186 products received the highest rating.
+The percentage of high-importance products that received the highest rating is __`r round(percentage_high_rating, 2)`%__.
+On-Time Delivery for High-Importance Products:
+A total of 616 high-importance products were delivered on time, while 332 products were not.
+The percentage of high-importance products delivered on time is __`r round(percentage_on_time, 0)`%__.
+
+These results highlight that product importance does not necessarily guarantee top ratings or on-time delivery. Both aspects — customer satisfaction (ratings) and delivery performance — are crucial for high-importance products, and further improvements may be needed in both areas.
+
+### Decision Tree Model Evaluation
+
+In this analysis, we explored several machine learning models to predict the On-Time Delivery status. The models tested included:
+
+- __Random Forest__,
+- __Logistic Regression__,
+- __Cubist Model__,
+- __Decision Tree (selected as the most promising model)__
+
+Why Decision Tree?
+
+After evaluating the models, the Decision Tree model showed the most promising results, outshining the others in terms of sensitivity and its ability to clearly interpret the results. Below is the performance evaluation of the Decision Tree model:
+
+Model Performance
+
+- **Accuracy**: The model achieved an accuracy of 68%, indicating that it correctly predicted the delivery status in 68% of the cases.
+- **Sensitivity**: With a Sensitivity of 94%, the model excelled at identifying products that were delivered on time. This is a high score, showing the model's strong ability to detect positive cases (on-time deliveries).
+- **Specificity**: The Specificity is 50%, meaning the model only correctly identified half of the products that were not delivered on time. This indicates room for improvement in distinguishing negative cases.
+
+These metrics demonstrate that the Decision Tree model performed well in predicting on-time deliveries but still needs further fine-tuning for predicting delayed deliveries.
+
+ROC Curve and AUC (Area Under the Curve)
+
+The AUC (Area Under the Curve) of 0.74 suggests a moderate ability of the model to differentiate between on-time and late deliveries. The ROC curve further confirms this performance:
+
+```{r, echo = FALSE}
+auc_value_dt <- auc(roc_curve_dt)
+plot(roc_curve_dt)
+legend("bottomright", legend = paste("AUC =", round(auc_value_dt, 2)), col = "blue", lwd = 2)
+```
+
+Confusion Matrix Heatmap
+
+I also visualized the Confusion Matrix of the Decision Tree model using a heatmap. The heatmap highlights how many True Positives, True Negatives, False Positives, and False Negatives the model predicted:
+
+```{r heatmap_dt=plot, dev='png', out.width="150%", echo=FALSE}
+plot(heatmap_dt)
+```
+
+In conclusion, although multiple models were tested, the Decision Tree model provided the best balance of performance metrics, showing a high sensitivity for detecting on-time deliveries. Further improvements could focus on enhancing its specificity for better detection of delayed products.
 
 ## References
 

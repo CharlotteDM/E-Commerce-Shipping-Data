@@ -10,6 +10,7 @@ library(xgboost)
 library(coefplot)
 library(pROC)
 library(e1071)
+library(nnet)
 library(smotefamily)
 install.packages("Cubist")
 library(Cubist)
@@ -690,6 +691,23 @@ heatmap_svm <- ggplot(confusion_matrix_svm_data, aes(x = Reference, y = Predicti
   )
 
 print(heatmap_svm)
+
+
+#####-------svm--------######
+set.seed(123)
+nn_model <- nnet(Reached.on.Time_Y.N ~ ., data = trainData, size = 5, decay = 0.1, maxit = 200)
+
+# prediction
+predictions_nn <- predict(nn_model, testData, type = "class")
+predictions_nn <- factor(predictions_nn, levels = levels(testData$Reached.on.Time_Y.N))
+# Confusing Matrix
+confusion_matrix_nn <- confusionMatrix(predictions_nn, testData$Reached.on.Time_Y.N)
+accuracy_nn <- confusion_matrix_nn$overall['Accuracy']
+sensitivity_nn <- confusion_matrix_nn$byClass['Sensitivity']
+specificity_nn <- confusion_matrix_nn$byClass['Specificity']
+print(paste("Accuracy:", round(accuracy_nn, 2)))
+print(paste("Sensitivity:", round(sensitivity_nn, 2)))
+print(paste("Specificity:", round(specificity_nn, 2)))
 
 
 #########-----------------------------------------------##########
