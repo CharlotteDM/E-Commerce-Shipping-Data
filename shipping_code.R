@@ -647,67 +647,11 @@ ggplot(confusion_matrix_cubist_data, aes(x = Reference, y = Prediction, fill = F
 
 
 #####-------svm--------######
-svm_model <- svm(Reached.on.Time_Y.N ~ ., data = trainData, probability = TRUE)
-
-#prediction
-predictions_svm <- predict(svm_model, testData, probability = TRUE)
-predictions_prob_svm <- attr(predictions_svm, "probabilities")[,2]
-
-#confusion matrix 
-confusion_matrix_svm <- confusionMatrix(predictions_svm, testData$Reached.on.Time_Y.N)
-accuracy_svm <- confusion_matrix_svm$overall['Accuracy']
-sensitivity_svm <- confusion_matrix_svm$byClass['Sensitivity']
-specificity_svm <- confusion_matrix_svm$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy_svm, 2)))
-print(paste("Sensitivity:", round(sensitivity_svm, 2)))
-print(paste("Specificity:", round(specificity_svm, 2)))
-
-# ROC curve
-roc_curve_svm <- roc(testData$Reached.on.Time_Y.N, predictions_prob_svm)
-plot(roc_curve_svm, main = "ROC Curve (SVM)", col = "blue")
-auc_value_svm <- auc(roc_curve_svm)
-legend("bottomright", legend = paste("AUC =", round(auc_value_svm, 2)), col = "blue", lwd = 2)
-
-# Heatmap for prediction
-confusion_matrix_svm_data <- as.data.frame(confusion_matrix_svm$table)
-confusion_matrix_svm_data$Freq[confusion_matrix_svm_data$Freq == 0] <- NA
-heatmap_svm <- ggplot(confusion_matrix_svm_data, aes(x = Reference, y = Prediction, fill = Freq)) +
-  geom_tile(color = "gray80") +
-  geom_text(aes(label = ifelse(is.na(Freq), "", Freq)), color = "black", size = 4) +
-  scale_fill_gradient(low = "white", high = "red", na.value = "white") +
-  labs(
-    title = "Confusion Matrix Heatmap (SVM)",
-    x = "Actual",
-    y = "Predicted",
-    fill = "Count"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
-    axis.title.x = element_text(color = "blue4", size = 12, face = "bold"),
-    axis.title.y = element_text(color = "blue4", size = 12, face = "bold"),
-    legend.title = element_text(size = 10, face = "bold"),
-    legend.text = element_text(size = 8)
-  )
-
-print(heatmap_svm)
 
 
-#####-------svm--------######
-set.seed(123)
-nn_model <- nnet(Reached.on.Time_Y.N ~ ., data = trainData, size = 5, decay = 0.1, maxit = 200)
 
-# prediction
-predictions_nn <- predict(nn_model, testData, type = "class")
-predictions_nn <- factor(predictions_nn, levels = levels(testData$Reached.on.Time_Y.N))
-# Confusing Matrix
-confusion_matrix_nn <- confusionMatrix(predictions_nn, testData$Reached.on.Time_Y.N)
-accuracy_nn <- confusion_matrix_nn$overall['Accuracy']
-sensitivity_nn <- confusion_matrix_nn$byClass['Sensitivity']
-specificity_nn <- confusion_matrix_nn$byClass['Specificity']
-print(paste("Accuracy:", round(accuracy_nn, 2)))
-print(paste("Sensitivity:", round(sensitivity_nn, 2)))
-print(paste("Specificity:", round(specificity_nn, 2)))
+#####-------neural network--------######
+
 
 
 #########-----------------------------------------------##########

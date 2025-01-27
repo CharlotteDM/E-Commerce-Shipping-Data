@@ -21,6 +21,8 @@ library(xgboost)
 library(coefplot)
 library(pROC)
 library(smotefamily)
+library(e1071)
+library(nnet)
 library(Cubist)
 library(Boruta)
 library(htmlwidgets)
@@ -70,7 +72,7 @@ First, we take a look at the general structure of the data and check for missing
 summary(shipping_data)
 ```
 
-###**Data Preparation**
+### **Data Preparation**
 
 To simplify the data analysis, unnecessary columns are removed, and categorical data is transformed into factors:
 
@@ -164,7 +166,7 @@ In this analysis, we explored several machine learning models to predict the On-
 
 Why Decision Tree?
 
-After evaluating the models, the Decision Tree model showed the most promising results, outshining the others in terms of sensitivity and its ability to clearly interpret the results. Below is the performance evaluation of the Decision Tree model:
+After evaluating the models, the Decision Tree model showed the most promising results, outshining the others in terms of sensitivity and its ability to clearly interpret the results. Below is the performance evaluation of the Decision Tree model.
 
 Model Performance
 
@@ -172,7 +174,11 @@ Model Performance
 - **Sensitivity**: With a Sensitivity of 94%, the model excelled at identifying products that were delivered on time. This is a high score, showing the model's strong ability to detect positive cases (on-time deliveries).
 - **Specificity**: The Specificity is 50%, meaning the model only correctly identified half of the products that were not delivered on time. This indicates room for improvement in distinguishing negative cases.
 
-These metrics demonstrate that the Decision Tree model performed well in predicting on-time deliveries but still needs further fine-tuning for predicting delayed deliveries.
+These metrics demonstrate that the Decision Tree model performed well in predicting on-time deliveries but still needs further fine-tuning for predicting delayed deliveries. In logistics, where avoiding delays is critical, using models with high sensitivity makes sense. Sensitivity reflects the model's ability to correctly identify cases where a shipment will not arrive on time (effectively detecting "delays" as "delays").
+
+The key insights regarding the factors influencing on-time delivery based on the analysis
+- Weight, discount offered, cost of the_ product, and prior purchases are key variables influencing whether a shipment will be delivered on time.
+- Variables such as gender and product importance have a lesser impact on the model and may be less significant for prediction.
 
 ROC Curve and AUC (Area Under the Curve)
 
