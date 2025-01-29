@@ -97,7 +97,7 @@ plot_4 <- ggplot(shipping_data, aes(x = Customer_rating)) +
     axis.title.y = element_text(color="pink4", size=12, hjust = 0.5, face="bold")) 
 
 
-#number of Custiomer Care Calls
+#number of Customer Care Calls
 plot_5 <- ggplot(shipping_data, aes(x = factor(Customer_care_calls))) +
   geom_bar(fill = "dodgerblue", color = "black") +
   geom_text(stat = "count", aes(label = after_stat(count)), vjust = 1.5, color = "black", size = 3.5) +
@@ -130,7 +130,7 @@ print(average_ratings)
 
 #heatmap for numerical variables
 numerical_vars <- shipping_data[sapply(shipping_data, is.numeric)]
-cor_matrix <- cor(numerical_vars, use = "complete.obs")
+cor_matrix <- cor(numerical_vars)
 
 cor_matrix_melted <- melt(cor_matrix)
 
@@ -214,9 +214,33 @@ plot_10 <- ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
     axis.title.y = element_text(color = "orange4", size = 12, hjust = 0.5, face = "bold")
   )
 
+#plot_10 in polish 
+shipping_data_count <- shipping_data %>%
+  group_by(Mode_of_Shipment) %>%
+  summarise(product_count = n())
+ggplot(shipping_data, aes(x = Mode_of_Shipment, y = Weight_in_gms)) +
+  geom_boxplot(fill = "lightgoldenrod2", color = "black") +
+  geom_jitter(color = "darkorange2", width = 0.2, alpha = 0.6) +
+  stat_summary(fun = median, geom = "point", shape = 23, size = 3, fill = "firebrick4") +
+  stat_summary(fun = median, geom = "text", aes(label = round(..y.., 2)), vjust = -1.5, color = "firebrick4") +
+  geom_text(data = shipping_data_count, aes(x = Mode_of_Shipment, y = max(shipping_data$Weight_in_gms), label = paste("Liczba produktów: ", product_count)), 
+            color = "firebrick4", vjust = -0.5, size = 4) +
+  labs(
+    title = "Rozkład wag produktów w zależności od metody transportu",
+    x = "Metoda transportu",
+    y = "Waga (g)"
+  ) +
+  scale_x_discrete(labels = c("Flight" = "Transport lotniczy", "Road" = "Transport lądowy", "Ship" = "Transport morski")) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "orange4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "orange4", size = 12, hjust = 0.5, face = "bold"),
+    axis.title.y = element_text(color = "orange4", size = 12, hjust = 0.5, face = "bold")
+  )
 
 
 ##Question1: What was Customer Rating? And was the product delivered on time?
+
 table(shipping_data$Customer_rating, shipping_data$Reached.on.Time_Y.N)
 
 shipping_data$Reached.on.Time_Y.N <- factor(
@@ -224,6 +248,7 @@ shipping_data$Reached.on.Time_Y.N <- factor(
   levels = c(0, 1), 
   labels = c("Not On Time", "On Time")
 )
+
 
 plot_11 <- ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
   geom_bar(position = "dodge", stat = "count", color = "black") +
@@ -236,7 +261,7 @@ plot_11 <- ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached
   ) +
   scale_fill_manual(
     values = c("Not On Time" = "tomato2", "On Time" = "seagreen3"),
-    labels = c("Not On Time" = "No", "On Time" = "Yes")
+    labels = c("No" = "Not On Time", "Yes" = "On Time")
   ) +
   theme_minimal() +
   theme(
@@ -246,9 +271,28 @@ plot_11 <- ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached
     legend.position = "top"
   )
 
+#plot_11 in polish
 
-
-
+ggplot(shipping_data, aes(x = factor(Customer_rating), fill = Reached.on.Time_Y.N, group = Reached.on.Time_Y.N)) +
+  geom_bar(position = "dodge", stat = "count", color = "black") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(
+    title = "Ocena klientów w zależności od terminowości dostawy",
+    x = "Ocena klienta",
+    y = "Liczba zamówień",
+    fill = "Dostawa"
+  ) +
+  scale_fill_manual(
+    values = c("Not On Time" = "tomato2", "On Time" = "seagreen3"),
+    labels = c("Not On Time" = "Opóźniona", "On Time" = "Na czas")
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(color = "blue4", size = 14, hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
+    axis.title.y = element_text(color = "blue4", size = 12, hjust = 0.5, face = "bold"),
+    legend.position = "top"
+  )
   
   
  #Question2: Is Customer query is being answered?
@@ -267,7 +311,8 @@ rownames(customer_care_table) <- c("> Mean Calls", "≤ Mean Calls")
 # Display the table
 customer_care_table
 
-  
+
+
   #Question3:If Product importance is high. having higest rating or being delivered on time?
 high_importance <- subset(shipping_data, Product_importance == "high")
 high_ratings <- table(high_importance$Customer_rating == max(shipping_data$Customer_rating))
@@ -645,12 +690,6 @@ ggplot(confusion_matrix_cubist_data, aes(x = Reference, y = Prediction, fill = F
     legend.text = element_text(size = 8)
   )
 
-
-#####-------svm--------######
-
-
-
-#####-------neural network--------######
 
 
 
